@@ -12,7 +12,9 @@ from .const import (
     CONFIG_FLOW_VERSION,
     CONF_BIMONTHLY_ENERGY,
     CONF_METER_START_DAY,
-    DOMAIN
+    CONF_PRICE_TYPE,
+    DOMAIN,
+    OPT_PRICE_TYPE
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,6 +82,11 @@ class TaiPowerCostFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(
                     CONF_METER_START_DAY,
                     default=lambda: datetime.now().strftime("%Y/%m/%d")): cv.string,
+                vol.Required(
+                    CONF_PRICE_TYPE,
+                    default="non_time_not_business"): vol.In(
+                    OPT_PRICE_TYPE
+                )
             }
         )
 
@@ -130,6 +137,13 @@ class TaiPowerCostOptionsFlow(config_entries.OptionsFlow):
                     default=_get_config_value(
                         self.config_entry, CONF_METER_START_DAY, 0)
                 ): cv.string,
+                vol.Required(
+                    CONF_PRICE_TYPE,
+                    default=_get_config_value(
+                        self.config_entry, CONF_PRICE_TYPE)
+                ): vol.In(
+                    OPT_PRICE_TYPE
+                )
             }
         )
 

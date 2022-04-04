@@ -12,7 +12,8 @@
             "user": {
                 "data": {
                     "bimonthly_energy": "Bimonthly Energy Entity",
-                    "meter_start_day": "Meter Start Day"
+                    "meter_start_day": "Meter Start Day",
+                    "price_type": "Electricity Price Type"
                 },
                 "description": "Please enter reset days and energy entity",
                 "title": "Choose the energy entity and reset days"
@@ -24,7 +25,8 @@
             "init": {
                 "data": {
                     "bimonthly_energy": "Bimonthly Energy Entity",
-                    "meter_start_day": "Meter Start Day"
+                    "meter_start_day": "Meter Start Day",
+                    "price_type": "Electricity Price Type"
                 }
             }
         }

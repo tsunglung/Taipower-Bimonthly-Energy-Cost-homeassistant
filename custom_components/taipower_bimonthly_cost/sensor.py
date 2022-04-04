@@ -16,6 +16,7 @@ from .const import (
     ATTR_USED_DAYS,
     CONF_BIMONTHLY_ENERGY,
     CONF_METER_START_DAY,
+    CONF_PRICE_TYPE,
     DOMAIN,
     UNIT_KWH_COST,
     UNIT_TWD
@@ -38,6 +39,7 @@ class KwhCostSensor(SensorEntity):
     def __init__(self, hass, entry_data):
         self._hass = hass
         self._energy_entity = entry_data[CONF_BIMONTHLY_ENERGY]
+        self._price_type = entry_data[CONF_PRICE_TYPE]
         self._kwh_cost = None
 
     def non_time_summer(self, kwh):
@@ -57,19 +59,51 @@ class KwhCostSensor(SensorEntity):
             kwh_cost = 6.41
         return kwh_cost
 
-    def non_time_not_summer(self, kwn):
+    def non_time_not_summer(self, kwh):
         """ return twd/kwh for non time and not in summer """
-        if kwn < 240.0:
+        if kwh < 240.0:
             kwh_cost = 1.63
-        elif 240.0 <= kwn <= 660.0:
+        elif 240.0 <= kwh <= 660.0:
             kwh_cost = 2.1
-        elif 660.0 <= kwn < 1000.0:
+        elif 660.0 <= kwh < 1000.0:
             kwh_cost = 2.89
-        elif 1000.0 <= kwn < 1400.0:
+        elif 1000.0 <= kwh < 1400.0:
             kwh_cost = 3.94
-        elif 1400.0 <= kwn < 2000.0:
+        elif 1400.0 <= kwh < 2000.0:
             kwh_cost = 4.6
-        elif kwn >= 2000.0:
+        elif kwh >= 2000.0:
+            kwh_cost = 5.03
+        return kwh_cost
+
+    def ladder_not_business_summer(self, kwh):
+        """ return twd/kwh for ladder and not business in summer """
+        if kwh < 120.0:
+            kwh_cost = 1.63
+        elif 121.0 <= kwh <= 330.0:
+            kwh_cost = 2.38
+        elif 331.0 <= kwh < 500.0:
+            kwh_cost = 3.52
+        elif 501.0 <= kwh < 700.0:
+            kwh_cost = 4.80
+        elif 701.0 <= kwh < 1000.0:
+            kwh_cost = 5.66
+        elif kwh >= 10001.0:
+            kwh_cost = 6.41
+        return kwh_cost
+
+    def ladder_not_business_not_summer(self, kwh):
+        """ return twd/kwh for ladder and not business not in summer """
+        if kwh < 120.0:
+            kwh_cost = 1.63
+        elif 121.0 <= kwh <= 330.0:
+            kwh_cost = 2.10
+        elif 331.0 <= kwh < 500.0:
+            kwh_cost = 2.89
+        elif 501.0 <= kwh < 700.0:
+            kwh_cost = 3.94
+        elif 701.0 <= kwh < 1000.0:
+            kwh_cost = 4.6
+        elif kwh >= 1001.0:
             kwh_cost = 5.03
         return kwh_cost
 
@@ -90,14 +124,19 @@ class KwhCostSensor(SensorEntity):
 
         if self._hass.states.get(self._energy_entity):
             state = self._hass.states.get(self._energy_entity).state
-            if isinstance(state, str):
+            if isinstance(state, (float, int, str)):
                 state = float(state)
             if isinstance(state, (float, int)):
-                state = float(state)
                 if now.month in [6, 7, 8, 9]:
-                    self._kwh_cost =  self.non_time_summer(state)
+                    if self._price_type == "ladder_not_business":
+                        self._kwh_cost =  self.ladder_not_business_summer(state)
+                    else:
+                        self._kwh_cost =  self.non_time_summer(state)
                 else:
-                    self._kwh_cost =  self.non_time_not_summer(state)
+                    if self._price_type == "ladder_not_business":
+                        self._kwh_cost =  self.ladder_not_business_not_summer(state)
+                    else:
+                        self._kwh_cost =  self.non_time_not_summer(state)
         return self._kwh_cost
 
     @property
@@ -117,6 +156,7 @@ class EnergyCostSensor(KwhCostSensor):
         self._energy_entity = entry_data[CONF_BIMONTHLY_ENERGY]
         self._reset_day = datetime.strptime(
             entry_data[CONF_METER_START_DAY], "%Y/%m/%d")
+        self._price_type = entry_data[CONF_PRICE_TYPE]
         self._kwh_cost = None
 
     async def reset_utility_meter(self, sensor):
@@ -181,10 +221,9 @@ class EnergyCostSensor(KwhCostSensor):
 
         if self._hass.states.get(self._energy_entity):
             state = self._hass.states.get(self._energy_entity).state
-            if isinstance(state, str):
+            if isinstance(state, (float, int, str)):
                 state = float(state)
             if isinstance(state, (float, int)):
-                state = float(state)
                 if now.month in [6, 7, 8, 9]:
                     self._kwh_cost =  self.non_time_summer(state)
                 else:
